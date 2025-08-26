@@ -40,4 +40,3 @@ Este proyecto utiliza el flujo **GitHub Flow**:
 
 ## 📎 Recursos
 - Documentación técnica (pendiente).
-- URL del repositorio: [Agrega aquí el enlace cuando lo crees].
