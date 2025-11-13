@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:registro_clases/widgets/custom_drawer.dart';
+import 'package:my_route_movil/widgets/custom_drawer.dart';
 
 /// !PasoParametrosScreen - Pantalla de Paso de Parámetros
 /// es una vista/screen que permite ingresar un valor

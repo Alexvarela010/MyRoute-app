@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:registro_clases/routes/app_router.dart';
-import 'themes/app_theme.dart'; // Importar el tema
+import 'package:my_route_movil/theme/app_theme.dart';
+import 'package:my_route_movil/router/app_router.dart';
 
 void main() async {
-  // Asegurarse de que los widgets de Flutter estén inicializados
+  // Asegurarse de que los bindings de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
-  // Optimizar la carga del .env
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint('Error loading .env file: $e');
-  }
-  // Inicializar dotenv para cargar las variables de entorno
-  // await dotenv.load(fileName: ".env");
+  // Cargar las variables de entorno
+  await dotenv.load(fileName: ".env");
 
+  // --- PASO DE DEPURACIÓN DEFINITIVO ---
+  // Imprimir el valor de la variable de entorno para verificar que se cargó correctamente.
+  if (kDebugMode) {
+    print('==========================================================');
+    print('VALOR DE API_BASE_URL CARGADO: ${dotenv.env['API_BASE_URL']}');
+    print('==========================================================');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -23,14 +26,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // build es un metodo que se ejecuta cada vez que se necesita redibujar la pantalla
-    //go_router para navegacion
     return MaterialApp.router(
-      theme:
-          AppTheme.lightTheme, //thema personalizado y permamente en toda la app
-      title:
-          'Flutter - UCEVA', // Usa el tema personalizado, no se muestra el tema por defecto. esto se visualiza en toda la app
-      routerConfig: appRouter, // Usa el router configurado
+      debugShowCheckedModeBanner: false,
+      title: 'MyRoute',
+      theme: AppTheme.lightTheme,
+      routerConfig: appRouter, // Usar la configuración del router
     );
   }
 }

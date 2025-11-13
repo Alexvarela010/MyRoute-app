@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
-import 'package:registro_clases/views/ciclo_vida/ciclo_vida_screen.dart';
-import 'package:registro_clases/views/home/home_screen.dart';
-import 'package:registro_clases/views/paso_parametros/detalle_screen.dart';
-import 'package:registro_clases/views/paso_parametros/paso_parametros_screen.dart';
+import 'package:my_route_movil/views/ciclo_vida/ciclo_vida_screen.dart';
+import 'package:my_route_movil/views/home/home_screen.dart';
+import 'package:my_route_movil/views/paso_parametros/detalle_screen.dart';
+import 'package:my_route_movil/views/paso_parametros/paso_parametros_screen.dart';
 
 import '../views/future/future_view.dart';
 import '../views/isolate/isolate_view.dart';

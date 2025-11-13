@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:registro_clases/widgets/base_view.dart';
+import 'package:my_route_movil/widgets/base_view.dart';
 
 /// !CicloVidaScreen
 /// nos permite entender cómo funciona el ciclo de vida

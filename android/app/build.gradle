@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+def localProperties = new java.util.Properties()
+def localPropertiesFile = rootProject.file('.env')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+// Usar fallback para evitar null
+def googleMapsApiKey = localProperties.getProperty('GOOGLE_MAPS_API_KEY') ?: ""
+
+// Advertencia en consola (no revela la clave si está vacía)
+if (!googleMapsApiKey) {
+    println "WARNING: GOOGLE_MAPS_API_KEY no encontrada en .env — usando placeholder vacío"
+}
+
+android {
+    namespace "com.example.my_route_movil"
+    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    defaultConfig {
+        applicationId "com.example.my_route_movil"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+
+        manifestPlaceholders = [
+                GOOGLE_MAPS_API_KEY: googleMapsApiKey,
+                applicationName: "io.flutter.app.FlutterApplication"
+        ]
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
