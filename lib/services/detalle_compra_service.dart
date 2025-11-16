@@ -39,6 +39,7 @@ class DetalleCompraService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return DetalleCompra.fromJson(json.decode(response.body));
     } else {
+      // Dejamos este bloque de depuración por si surgen errores futuros.
       if (kDebugMode) {
         print('Error al crear DetalleCompra. StatusCode: ${response.statusCode}');
         print('Response Body: ${response.body}');
