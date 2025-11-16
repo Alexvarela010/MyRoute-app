@@ -48,7 +48,7 @@ class ReservationService {
       }
 
       // 4. Crear el objeto DetalleCompra
-      final newDetalle = DetalleCompra(
+      DetalleCompra newDetalle = DetalleCompra(
         id: 0, // El backend lo genera
         ruta: ruta,
         compra: createdCompra,
@@ -56,10 +56,16 @@ class ReservationService {
         cantidadPersonas: cantidadPersonas,
         valorTotal: costoTotal.round(),
       );
+      print('Objeto Detalle Compra creado y recibido del backend:');
+      print(newDetalle.toJson());
+
 
       // 5. Guardar el DetalleCompra
-      await _detalleCompraService.crearDetalleCompra(newDetalle);
-
+      final detalleCompra=await _detalleCompraService.crearDetalleCompra(newDetalle);
+      if (kDebugMode) {
+        print('Objeto Detalle Compra creado y recibido del backend:');
+        print(jsonEncode(detalleCompra.toJson()));
+      }
     } catch (e) {
       // Re-lanzar la excepción para que la UI pueda manejarla
       throw Exception('Error al crear la reservación: $e');

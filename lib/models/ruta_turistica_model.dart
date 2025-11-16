@@ -1,36 +1,47 @@
+import 'package:my_route_movil/models/ciudad_model.dart';
+import 'package:my_route_movil/models/punto_visita_model.dart';
+
 class RutaTuristica {
   final int idRutaTuristica;
   final String titulo;
   final String descripcion;
-  final DateTime fechaCreacion;
+  final String imgUrl;
+  final DateTime? fechaCreacion; // Hacer nulable
   final int cantDias;
-  final bool estado;
-  final int extras;
-  final String imgUrl; // Nuevo campo para la imagen
+  final bool? estado; // Hacer nulable
+  final double extras;
+  final Ciudad? ciudad;
+  final List<PuntoVisita>? puntosDeVisita;
 
   RutaTuristica({
     required this.idRutaTuristica,
     required this.titulo,
     required this.descripcion,
-    required this.fechaCreacion,
+    required this.imgUrl,
+    this.fechaCreacion,
     required this.cantDias,
-    required this.estado,
+    this.estado,
     required this.extras,
-    required this.imgUrl, // Añadido al constructor
+    this.ciudad,
+    this.puntosDeVisita,
   });
 
   factory RutaTuristica.fromJson(Map<String, dynamic> json) {
     return RutaTuristica(
-      idRutaTuristica: json['id_rutaturistica'],
-      titulo: json['titulo'],
-      descripcion: json['descripcion'],
-      // Asumiendo que el backend envía la fecha como un String en formato ISO 8601
-      fechaCreacion: DateTime.parse(json['fecha_creacion']),
-      cantDias: json['cant_dias'],
+      // --- CORRECCIÓN ---
+      // Usamos el operador ?? para asignar un valor por defecto si el campo es nulo.
+      idRutaTuristica: json['id_rutaturistica'] ?? 0,
+      titulo: json['titulo'] ?? '',
+      descripcion: json['descripcion'] ?? '',
+      imgUrl: json['url'] ?? '',
+      fechaCreacion: json['fecha_creacion'] != null ? DateTime.parse(json['fecha_creacion']) : null,
+      cantDias: json['cant_dias'] ?? 0,
       estado: json['estado'],
-      extras: json['extras'],
-      // Mapear el campo 'url' del JSON al campo 'imgUrl' del modelo
-      imgUrl: json['url'] ?? '', 
+      extras: (json['extras'] ?? 0.0).toDouble(),
+      ciudad: json['ciudad'] != null ? Ciudad.fromJson(json['ciudad']) : null,
+      puntosDeVisita: json['puntosDeVisita'] != null
+          ? (json['puntosDeVisita'] as List).map((i) => PuntoVisita.fromJson(i)).toList()
+          : [],
     );
   }
 
@@ -39,13 +50,11 @@ class RutaTuristica {
       'id_rutaturistica': idRutaTuristica,
       'titulo': titulo,
       'descripcion': descripcion,
-      // Enviar solo la parte de la fecha, sin la hora
-      'fecha_creacion': fechaCreacion.toIso8601String().split('T').first,
+      'url': imgUrl,
+      'fecha_creacion': fechaCreacion?.toIso8601String().split('T').first,
       'cant_dias': cantDias,
       'estado': estado,
       'extras': extras,
-      // Mapear el campo 'imgUrl' del modelo al campo 'url' para el JSON
-      'url': imgUrl, 
     };
   }
 }

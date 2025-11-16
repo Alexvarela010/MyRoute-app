@@ -39,9 +39,6 @@ class DetalleCompraService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return DetalleCompra.fromJson(json.decode(response.body));
     } else {
-      // --- PASO DE DEPURACIÓN ---
-      // Si la petición falla, imprimimos el código de estado y el cuerpo de la respuesta.
-      // Esto nos mostrará el mensaje de error exacto que envía Spring Boot.
       if (kDebugMode) {
         print('Error al crear DetalleCompra. StatusCode: ${response.statusCode}');
         print('Response Body: ${response.body}');
