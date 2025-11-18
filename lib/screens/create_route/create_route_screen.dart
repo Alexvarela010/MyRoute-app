@@ -18,71 +18,48 @@ class _CreateRouteScreenState extends State<CreateRouteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _daysController = TextEditingController();
-  final _imageUrlController = TextEditingController(); // Controlador para la URL de la imagen
+  final _daysController = TextEditingController(text: '1');
+  final _imageUrlController = TextEditingController();
 
-  // Servicios
   final _puntoVisitaService = PuntoVisitaService();
   final _rutaTuristicaService = RutaTuristicaService();
   final _rutaPuntoService = RutaPuntoService();
 
-  // Estado
-  late Future<List<PuntoVisita>> _puntosFuture;
-  final Set<PuntoVisita> _selectedPuntos = {};
+  final List<PuntoVisita> _selectedPuntos = [];
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _puntosFuture = _puntoVisitaService.listarPuntosVisita();
-  }
 
   Future<void> _saveRoute() async {
     if (!_formKey.currentState!.validate() || _selectedPuntos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, completa todos los campos y selecciona al menos un punto de visita.')),
+        const SnackBar(content: Text('Completa todos los campos y añade al menos un punto de visita.')),
       );
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
-      // 1. Crear el objeto RutaTuristica
       final newRoute = RutaTuristica(
-        idRutaTuristica: 0, // El backend asignará el ID
+        idRutaTuristica: 0,
         titulo: _titleController.text,
         descripcion: _descriptionController.text,
         fechaCreacion: DateTime.now(),
-        cantDias: int.parse(_daysController.text),
+        cantDias: int.tryParse(_daysController.text) ?? 1,
         estado: true,
-        extras: 0, // Valor de ejemplo
-        imgUrl: _imageUrlController.text, // Añadir la URL de la imagen
+        extras: 0, // Se puede ajustar si se añade un campo para esto
+        imgUrl: _imageUrlController.text,
       );
-
-      // 2. Guardar la RutaTuristica y obtener el objeto creado con su ID
       final createdRoute = await _rutaTuristicaService.crearRutaTuristica(newRoute);
-
-      // 3. Crear todas las asociaciones Ruta-Punto en paralelo
-      final List<Future<void>> futureAssociations = [];
-      for (var punto in _selectedPuntos) {
-        final newRutaPunto = RutaPunto(
-          idRutaPunto: 0, // El backend asigna el ID
-          actividad: punto,
-          ruta: createdRoute,
-        );
-        futureAssociations.add(_rutaPuntoService.crearRutaPunto(newRutaPunto));
-      }
-
-      await Future.wait(futureAssociations);
+      final associations = _selectedPuntos.map((punto) {
+        final newRutaPunto = RutaPunto(idRutaPunto: 0, actividad: punto, ruta: createdRoute);
+        return _rutaPuntoService.crearRutaPunto(newRutaPunto);
+      });
+      await Future.wait(associations);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('¡Ruta creada con éxito!'), backgroundColor: Colors.green),
         );
-        context.pop(); // Volver a la pantalla anterior (HomeScreen)
+        context.pop();
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,89 +67,148 @@ class _CreateRouteScreenState extends State<CreateRouteScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crear Nueva Ruta'),
-      ),
+      appBar: AppBar(title: const Text('Crear Nueva Ruta')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Detalles de la Ruta', style: Theme.of(context).textTheme.headlineSmall),
+              TextFormField(controller: _titleController, decoration: const InputDecoration(hintText: 'Título de la ruta'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+              const SizedBox(height: 20),
+              TextFormField(controller: _descriptionController, decoration: const InputDecoration(hintText: 'Descripción de la ruta'), maxLines: 3, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+              const SizedBox(height: 20),
+              Row(children: [
+                Expanded(child: TextFormField(controller: _daysController, decoration: const InputDecoration(hintText: 'Días'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Requerido' : null)),
+                const SizedBox(width: 20),
+                Expanded(flex: 3, child: TextFormField(controller: _imageUrlController, decoration: const InputDecoration(hintText: 'URL de la imagen'), validator: (v) => v!.isEmpty ? 'Requerido' : null)),
+              ]),
+              const SizedBox(height: 32),
+              Text('Puntos de Interés', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildSelectedPointsList(),
               const SizedBox(height: 16),
-              TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Título de la Ruta'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Descripción'), maxLines: 3, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _daysController, decoration: const InputDecoration(labelText: 'Cantidad de Días'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _imageUrlController, decoration: const InputDecoration(labelText: 'URL de la Imagen'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 24),
-              Text('Selecciona los Puntos de Visita', style: Theme.of(context).textTheme.headlineSmall),
-              const Divider(),
-              _buildPuntosDeVisitaList(),
-              const SizedBox(height: 24),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(onPressed: _saveRoute, child: const Text('Guardar Ruta')),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _showAddPointsModal,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Añadir punto de interés'),
                 ),
+              ),
             ],
           ),
         ),
       ),
+      bottomNavigationBar: _isLoading 
+          ? const LinearProgressIndicator() 
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+              child: ElevatedButton(onPressed: _saveRoute, child: const Text('Guardar Ruta')), 
+            ),
     );
   }
 
-  Widget _buildPuntosDeVisitaList() {
-    return FutureBuilder<List<PuntoVisita>>(
-      future: _puntosFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Text('No se pudieron cargar los puntos de visita.');
-        }
+  Widget _buildSelectedPointsList() {
+    if (_selectedPuntos.isEmpty) {
+      return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Aún no has añadido puntos.', style: TextStyle(color: Colors.grey))));
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _selectedPuntos.length,
+      itemBuilder: (context, index) {
+        final punto = _selectedPuntos[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(child: Text('${index + 1}')),
+            title: Text(punto.nombreActividad),
+            subtitle: Text(punto.ciudad.ciudad),
+            trailing: IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent), onPressed: () => setState(() => _selectedPuntos.remove(punto))),
+          ),
+        );
+      },
+    );
+  }
 
-        final puntos = snapshot.data!;
-        return ListView.builder(
-          shrinkWrap: true, // Para que funcione dentro de un SingleChildScrollView
-          physics: const NeverScrollableScrollPhysics(), // Desactiva el scroll de esta lista
-          itemCount: puntos.length,
-          itemBuilder: (context, index) {
-            final punto = puntos[index];
-            final isSelected = _selectedPuntos.contains(punto);
-            return CheckboxListTile(
-              title: Text(punto.nombreActividad),
-              subtitle: Text(punto.ciudad.ciudad),
-              value: isSelected,
-              onChanged: (bool? value) {
-                setState(() {
-                  if (value == true) {
-                    _selectedPuntos.add(punto);
-                  } else {
-                    _selectedPuntos.remove(punto);
-                  }
-                });
-              },
+  void _showAddPointsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return FutureBuilder<List<PuntoVisita>>(
+          future: _puntoVisitaService.listarPuntosVisita(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const Center(heightFactor: 5, child: CircularProgressIndicator());
+            final allPoints = snapshot.data!;
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (_, controller) => Column(
+                children: [
+                  Padding(padding: const EdgeInsets.all(16), child: Text('Selecciona un punto', style: Theme.of(context).textTheme.titleLarge)),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: controller,
+                      itemCount: allPoints.length,
+                      itemBuilder: (_, index) {
+                        final punto = allPoints[index];
+                        final isAlreadySelected = _selectedPuntos.any((p) => p.id == punto.id);
+                        return ListTile(
+                          title: Text(punto.nombreActividad),
+                          subtitle: Text(punto.ciudad.ciudad),
+                          onTap: isAlreadySelected ? null : () => _showPointDetailsDialog(punto),
+                          trailing: isAlreadySelected ? const Icon(Icons.check_circle, color: Colors.green) : const Icon(Icons.add_circle_outline),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
       },
     );
+  }
+
+  void _showPointDetailsDialog(PuntoVisita punto) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(punto.nombreActividad),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(punto.descripcion, maxLines: 4, overflow: TextOverflow.ellipsis),
+            const Divider(height: 24),
+            Row(children: [const Icon(Icons.location_city_outlined, size: 16), const SizedBox(width: 8), Text(punto.ciudad.ciudad)]),
+            const SizedBox(height: 8),
+            Row(children: [const Icon(Icons.attach_money_rounded, size: 16), const SizedBox(width: 8), Text(punto.precio.toStringAsFixed(0))]),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+          ElevatedButton(onPressed: () => _addPoint(punto), child: const Text('Agregar')),
+        ],
+      ),
+    );
+  }
+
+  void _addPoint(PuntoVisita punto) {
+    setState(() => _selectedPuntos.add(punto));
+    Navigator.of(context).pop(); // Cierra el dialog
+    // No cerramos el bottom sheet para que puedan seguir añadiendo puntos.
   }
 }
