@@ -40,7 +40,6 @@ final appRouter = GoRouter(
     GoRoute(path: '/booking-success', builder: (context, state) => const BookingSuccessScreen()),
     GoRoute(path: '/create-route', builder: (context, state) => const CreateRouteScreen()),
     GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
-    // --- CORRECCIÓN FINAL ---
     GoRoute(
       path: '/map',
       builder: (context, state) {

@@ -32,7 +32,6 @@ class DetalleCompra {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      // --- CORRECCIÓN FINAL ---
       // Ahora tanto 'ruta' como 'compra' se envían como objetos simples
       // que solo contienen su ID, que es lo que Spring Boot espera para
       // establecer las relaciones @ManyToOne al crear un nuevo registro.

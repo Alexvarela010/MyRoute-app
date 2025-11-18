@@ -56,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      // --- CORRECCIÓN: AppBar minimalista para el botón de atrás ---
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -73,13 +72,11 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                // --- CORRECCIÓN: Títulos actualizados ---
                 Text('Bienvenido de nuevo', style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text('Inicia sesión para continuar tu aventura', style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
                 const SizedBox(height: 40),
 
-                // --- CORRECCIÓN: Inputs con nuevo diseño ---
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(hintText: 'tu@email.com'),
@@ -104,7 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // --- CORRECCIÓN: Link de "Olvidaste contraseña" ---
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -113,7 +109,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // --- CORRECCIÓN: Botón principal de ancho completo ---
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : SizedBox(
@@ -128,7 +123,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-      // --- CORRECCIÓN: Footer para el link de registro ---
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Row(

@@ -28,7 +28,6 @@ class RutaTuristica {
 
   factory RutaTuristica.fromJson(Map<String, dynamic> json) {
     return RutaTuristica(
-      // --- CORRECCIÓN ---
       // Usamos el operador ?? para asignar un valor por defecto si el campo es nulo.
       idRutaTuristica: json['id_rutaturistica'] ?? 0,
       titulo: json['titulo'] ?? '',

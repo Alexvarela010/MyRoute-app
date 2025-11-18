@@ -31,7 +31,6 @@ class UserInfo {
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
-      // --- CORRECCIÓN ---
       // Usamos el operador ?? para asignar un valor por defecto si el campo es nulo.
       cedula: json['cedula'] ?? '',
       email: json['email'] ?? '',

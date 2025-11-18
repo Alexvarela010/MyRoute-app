@@ -13,7 +13,6 @@ class WelcomeScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // --- CORRECCIÓN: Gradiente de fondo actualizado ---
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [colors.primary, colors.secondary, colors.tertiary],
@@ -26,7 +25,6 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 2),
-              // --- CORRECCIÓN: Icono con efecto de desenfoque ---
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
@@ -60,7 +58,6 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(flex: 3),
-              // --- CORRECCIÓN: Botones CTA actualizados ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(

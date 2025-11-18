@@ -29,7 +29,6 @@ class Cliente {
 
   factory Cliente.fromJson(Map<String, dynamic> json) {
     return Cliente(
-      // --- CORRECCIÓN ---
       // Usamos el operador ?? para asignar un valor por defecto si el campo es nulo.
       cedula: json['cedula'] ?? '',
       username: json['username'] ?? '',

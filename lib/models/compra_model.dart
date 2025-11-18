@@ -22,7 +22,6 @@ class Compra {
 
   factory Compra.fromJson(Map<String, dynamic> json) {
     return Compra(
-      // --- CORRECCIÓN ---
       // Usamos el operador ?? para asignar un valor por defecto si el campo es nulo.
       id: json['id'] ?? 0,
       usuario: json['usuario'] != null ? UserInfo.fromJson(json['usuario']) : null,
