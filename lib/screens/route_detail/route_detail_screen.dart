@@ -1,10 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:my_route_movil/models/route_detail_model.dart';
+import 'package:my_route_movil/models/ruta_turistica_model.dart';
 import 'package:my_route_movil/services/favorites_service.dart';
-import 'package:my_route_movil/services/reservation_service.dart';
 import 'package:my_route_movil/services/ruta_turistica_service.dart';
-import 'package:my_route_movil/widgets/reservation_dialog.dart';
+
+import '../../models/route_detail_model.dart';
 
 class RouteDetailScreen extends StatefulWidget {
   final int routeId;
@@ -15,15 +16,11 @@ class RouteDetailScreen extends StatefulWidget {
 }
 
 class _RouteDetailScreenState extends State<RouteDetailScreen> {
-  // Servicios
   final _rutaService = RutaTuristicaService();
   final _favoritesService = FavoritesService();
-  final _reservationService = ReservationService();
 
-  // Estado
   late Future<RouteDetail> _detailFuture;
   bool _isFavorite = false;
-  bool _isReserving = false;
 
   @override
   void initState() {
@@ -42,45 +39,11 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
     _checkIfFavorite();
   }
 
-  Future<void> _handleReservation(RouteDetail routeDetail) async {
-    final int? numberOfPeople = await showDialog<int>(
-      context: context,
-      builder: (context) => const ReservationDialog(),
-    );
-
-    if (numberOfPeople == null) return;
-
-    setState(() => _isReserving = true);
-
-    try {
-      final double extras = routeDetail.ruta.extras.toDouble();
-      final double puntosSum = routeDetail.puntosDeVisita.fold<double>(0.0, (sum, item) => sum + item.precio);
-      final double totalCost = (extras + puntosSum) * numberOfPeople;
-
-      await _reservationService.createReservation(
-        ruta: routeDetail.ruta,
-        cantidadPersonas: numberOfPeople,
-        costoTotal: totalCost,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Reserva creada con éxito!'), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error en la reserva: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isReserving = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: FutureBuilder<RouteDetail>(
         future: _detailFuture,
@@ -88,11 +51,8 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No se encontraron detalles de la ruta.'));
+          if (snapshot.hasError || !snapshot.hasData) {
+            return const Center(child: Text('No se pudo cargar la ruta.'));
           }
 
           final routeDetail = snapshot.data!;
@@ -103,115 +63,134 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
             children: [
               CustomScrollView(
                 slivers: [
-                  SliverAppBar(
-                    expandedHeight: 250.0,
-                    floating: false,
-                    pinned: true,
-                    flexibleSpace: FlexibleSpaceBar(
-                      // --- CORRECCIÓN ---
-                      // Se quita el título de aquí para que no se sobreponga a la imagen.
-                      // title: Text(ruta.titulo, style: const TextStyle(shadows: [Shadow(blurRadius: 10)])),
-                      background: ruta.imgUrl.isNotEmpty
-                          ? Image.network(
-                              ruta.imgUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => 
-                                const Center(child: Icon(Icons.image_not_supported, size: 100, color: Colors.white70)),
-                            )
-                          : Container(
-                              color: Colors.grey[400],
-                              child: const Icon(Icons.map, size: 100, color: Colors.white70),
-                            ),
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
-                        color: _isFavorite ? Colors.redAccent : Colors.white,
-                        onPressed: _toggleFavorite,
-                      ),
-                    ],
-                  ),
+                  SliverAppBar(expandedHeight: 256, stretch: true, pinned: true, backgroundColor: colorScheme.background, elevation: 0, automaticallyImplyLeading: false, flexibleSpace: FlexibleSpaceBar(background: Image.network(ruta.imgUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.image_not_supported))))),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // --- CORRECCIÓN ---
-                          // Se añade el título aquí, encima de la descripción.
-                          Text(
-                            ruta.titulo,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
+                          Text(ruta.titulo, style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Row(children: [Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]), const SizedBox(width: 4), Text(ruta.ciudad?.ciudad ?? 'Ubicación', style: textTheme.bodyLarge?.copyWith(color: Colors.grey[600]))]),
                           const SizedBox(height: 16),
-                          Text(ruta.descripcion, style: Theme.of(context).textTheme.bodyLarge),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildInfoChip(Icons.calendar_today, '${ruta.cantDias} días', context),
-                              _buildInfoChip(Icons.attach_money, '${ruta.extras} (extras)', context),
-                            ],
-                          ),
+                          _buildStatsCard(ruta, textTheme, colorScheme),
                           const SizedBox(height: 24),
-                          Text('Puntos de Visita', style: Theme.of(context).textTheme.headlineSmall),
-                          const Divider(),
+                          Text('Descripción', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text(ruta.descripcion, style: textTheme.bodyLarge?.copyWith(color: Colors.grey[700])),
+                          const SizedBox(height: 24),
+                          Text('Puntos de Interés', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final punto = puntos[index];
-                        return ListTile(
-                          leading: CircleAvatar(child: Icon(Icons.location_on, color: Theme.of(context).colorScheme.secondary)),
-                          title: Text(punto.nombreActividad),
-                          subtitle: Text(punto.descripcion, maxLines: 2, overflow: TextOverflow.ellipsis),
-                          trailing: Text('\$${punto.precio.toStringAsFixed(2)}'),
-                        );
-                      },
-                      childCount: puntos.length,
-                    ),
+                  SliverList.builder(itemCount: puntos.length, itemBuilder: (context, index) {
+                      final punto = puntos[index];
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: Theme.of(context).dividerColor)),
+                        child: Row(children: [CircleAvatar(backgroundColor: colorScheme.primary, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))), const SizedBox(width: 16), Expanded(child: Text(punto.nombreActividad, style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500)))]),
+                      );
+                    },
                   ),
-                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ElevatedButton(onPressed: () => _handleReservation(routeDetail), child: const Text('Reservar Visita')),
-                    )
-                   )
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
-              if (_isReserving)
-                Container(
-                  color: Colors.black.withOpacity(0.5),
-                  child: const Center(child: CircularProgressIndicator()),
-                )
+              _buildFloatingButtons(context),
             ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          try {
-            final detail = await _detailFuture;
-            if (detail.puntosDeVisita.isNotEmpty) {
-              context.push('/map', extra: detail.puntosDeVisita);
-            }
-          } catch (_) {
-            // Ignorar si la carga falla o manejar según convenga
-          }
+      bottomNavigationBar: FutureBuilder<RouteDetail>(
+        future: _detailFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox.shrink();
+          return _buildBookingFooter(context, snapshot.data!);
         },
-        child: const Icon(Icons.map_outlined),
       ),
     );
   }
 
-  Widget _buildInfoChip(IconData icon, String label, BuildContext context) {
-    return Chip(
-      avatar: Icon(icon, color: Theme.of(context).primaryColor),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+  Widget _buildFloatingButtons(BuildContext context) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      left: 16,
+      right: 16,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildFloatingButton(context, Icons.arrow_back, () => context.pop()),
+          Row(
+            children: [
+              _buildFloatingButton(context, Icons.share_outlined, () {}), 
+              const SizedBox(width: 8),
+              _buildFloatingButton(context, _isFavorite ? Icons.favorite : Icons.favorite_border, _toggleFavorite, iconColor: _isFavorite ? Colors.redAccent : null),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildFloatingButton(BuildContext context, IconData icon, VoidCallback onPressed, {Color? iconColor}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(50),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: CircleAvatar(
+          backgroundColor: Colors.white.withOpacity(0.3),
+          child: IconButton(
+            icon: Icon(icon, color: iconColor ?? Colors.black87),
+            onPressed: onPressed,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(RutaTuristica ruta, TextTheme textTheme, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor)
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(Icons.access_time_outlined, '${ruta.cantDias} días', textTheme),
+          _buildStatItem(Icons.attach_money, ruta.extras.toStringAsFixed(0), textTheme),
+          _buildStatItem(Icons.star_border, '4.8', textTheme, iconColor: Colors.amber),
+        ],
+      ),
+    );
+  }
+
+  Column _buildStatItem(IconData icon, String value, TextTheme textTheme, {Color? iconColor}) {
+    return Column(
+      children: [
+        Icon(icon, color: iconColor ?? Colors.grey[600]),
+        const SizedBox(height: 4),
+        Text(value, style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildBookingFooter(BuildContext context, RouteDetail routeDetail) {
+    return Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, border: Border(top: BorderSide(color: Theme.of(context).dividerColor))),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => context.push('/booking', extra: routeDetail),
+            child: const Text('Reservar ahora'),
+          ),
+        ),
+      );
   }
 }

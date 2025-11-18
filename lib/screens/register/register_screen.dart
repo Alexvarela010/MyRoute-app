@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:my_route_movil/models/cliente_model.dart';
 import 'package:my_route_movil/models/user_info_model.dart';
 import 'package:my_route_movil/services/auth_service.dart';
-import 'package:my_route_movil/services/cliente_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,17 +13,13 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
-  final _clienteService = ClienteService(); // Servicio para crear el cliente
   bool _isLoading = false;
 
-  // Controladores para todos los campos del formulario
-  final _cedulaController = TextEditingController();
-  final _emailController = TextEditingController();
+  // Controladores para los campos del nuevo diseño
   final _nombreController = TextEditingController();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _fechaNacimientoController = TextEditingController();
-  final _telefonoController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,50 +27,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Crear el objeto UserInfo con los datos del formulario
+      // Simplificamos la creación del usuario para el registro rápido
       final newUser = UserInfo(
-        cedula: _cedulaController.text,
+        cedula: '0000000000', // Placeholder, se puede pedir después
         email: _emailController.text,
         nombre: _nombreController.text,
-        username: _usernameController.text,
+        username: _emailController.text, // Usamos el email como username inicial
         password: _passwordController.text,
-        fechaNacimiento: DateTime.parse(_fechaNacimientoController.text),
-        roles: 'ROLE_USER', // Rol por defecto para nuevos usuarios
+        fechaNacimiento: DateTime.now(), // Placeholder
+        roles: 'ROLE_USER',
         activo: true,
-        telefono: _telefonoController.text,
+        telefono: '', 
         infoAdicional: '',
         telPersonaContacto: '',
         nombrePersonaContacto: '',
         tipoSangre: '',
       );
 
-      // 2. Crear el UserInfo en el backend
       await _authService.register(newUser);
-
-      // 3. Crear el objeto Cliente con los mismos datos
-      final newClient = Cliente(
-        cedula: newUser.cedula,
-        username: newUser.username,
-        password: newUser.password,
-        nombre: newUser.nombre,
-        correo: newUser.email,
-        telefono: newUser.telefono,
-        fechaNacimiento: newUser.fechaNacimiento,
-        activo: true,
-        usuario: newUser, // ¡Importante! Asociar el UserInfo creado
-        nombrePersonaContacto: '', // Estos campos pueden llenarse después
-        telefonoPersonaContacto: '',
-      );
-
-      // 4. Crear el Cliente en el backend
-      await _clienteService.crearCliente(newClient);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Usuario registrado con éxito! Por favor, inicia sesión.'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('¡Registro exitoso! Ya puedes iniciar sesión.'), backgroundColor: Colors.green),
         );
-        // Si el registro es exitoso, volver al login
-        context.pop();
+        context.go('/login'); // Llevamos al usuario a la pantalla de login
       }
 
     } catch (e) {
@@ -97,53 +71,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Cuenta'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        backgroundColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(controller: _cedulaController, decoration: const InputDecoration(labelText: 'Cédula'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _nombreController, decoration: const InputDecoration(labelText: 'Nombre Completo'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _usernameController, decoration: const InputDecoration(labelText: 'Nombre de Usuario'), validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _emailController, decoration: const InputDecoration(labelText: 'Correo Electrónico'), keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty || !v.contains('@') ? 'Email inválido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _passwordController, decoration: const InputDecoration(labelText: 'Contraseña'), obscureText: true, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(controller: _telefonoController, decoration: const InputDecoration(labelText: 'Teléfono'), keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _fechaNacimientoController,
-                decoration: const InputDecoration(labelText: 'Fecha de Nacimiento (YYYY-MM-DD)', prefixIcon: Icon(Icons.calendar_today)),
-                keyboardType: TextInputType.datetime,
-                validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
-                onTap: () async {
-                  FocusScope.of(context).requestFocus(FocusNode()); // Quitar foco
-                  final pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime.now(),
-                  );
-                  if (pickedDate != null) {
-                    _fechaNacimientoController.text = pickedDate.toIso8601String().split('T').first;
-                  }
-                },
-              ),
-              const SizedBox(height: 30),
-              _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ElevatedButton(onPressed: _register, child: const Text('Registrarse')),
-            ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Títulos actualizados ---
+                Text('Crear cuenta', style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Regístrate y comienza a explorar', style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface.withOpacity(0.6))),
+                const SizedBox(height: 40),
+
+                // --- Inputs con nuevo diseño ---
+                TextFormField(
+                  controller: _nombreController,
+                  decoration: const InputDecoration(hintText: 'Nombre completo'),
+                  validator: (v) => v!.isEmpty ? 'El nombre es requerido' : null,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(hintText: 'Correo electrónico'),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) => v!.isEmpty || !v.contains('@') ? 'Introduce un email válido' : null,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(hintText: 'Contraseña'),
+                  obscureText: true,
+                  validator: (v) => v!.isEmpty || v.length < 6 ? 'La contraseña debe tener al menos 6 caracteres' : null,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  decoration: const InputDecoration(hintText: 'Confirmar contraseña'),
+                  obscureText: true,
+                  validator: (v) {
+                    if (v != _passwordController.text) {
+                      return 'Las contraseñas no coinciden';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 40),
+                
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _register,
+                          child: const Text('Registrarse'),
+                        ),
+                      ),
+              ],
+            ),
           ),
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('¿Ya tienes cuenta? ', style: textTheme.bodyMedium),
+            TextButton(
+              onPressed: () => context.go('/login'), // Usamos 'go' para limpiar la pila
+              child: Text('Inicia sesión', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
       ),
     );

@@ -42,6 +42,7 @@ dependencies:
   jwt_decoder: ^2.0.1 # Para decodificar el token JWT
   shared_preferences: ^2.2.3 # Para guardar datos simples
   google_maps_flutter: ^2.6.1 # Para Google Maps
+  intl: ^0.18.1 # Para internacionalización y formateo de fechas/números
 
 dev_dependencies:
   flutter_test:

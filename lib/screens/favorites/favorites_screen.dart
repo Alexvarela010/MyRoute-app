@@ -30,66 +30,105 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Future<List<RutaTuristica>> _getFavoriteRoutes() async {
-    // 1. Obtener los IDs de las rutas favoritas
     final favoriteIds = await _favoritesService.getFavoriteRouteIds();
-
-    if (favoriteIds.isEmpty) {
-      return []; // No hay favoritos, devolver lista vacía
-    }
-
-    // 2. Para cada ID, crear un futuro que obtenga los datos de la ruta
-    final List<Future<RutaTuristica>> futureRutas = favoriteIds
-        .map((id) => _rutaService.obtenerRutaTuristica(int.parse(id)))
-        .toList();
-
-    // 3. Esperar a que todas las llamadas a la API terminen
-    final List<RutaTuristica> rutas = await Future.wait(futureRutas);
-
-    return rutas;
+    if (favoriteIds.isEmpty) return [];
+    final futureRutas = favoriteIds.map((id) => _rutaService.obtenerRutaTuristica(int.parse(id)));
+    return await Future.wait(futureRutas);
   }
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Rutas Favoritas'),
-      ),
-      body: FutureBuilder<List<RutaTuristica>>(
-        future: _favoritesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error al cargar favoritos: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'Aún no tienes rutas favoritas.\n¡Explora y añade algunas!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-            );
-          }
+      body: SafeArea(
+        child: FutureBuilder<List<RutaTuristica>>(
+          future: _favoritesFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
 
-          final favoriteRutas = snapshot.data!;
+            final favoriteRutas = snapshot.data ?? [];
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: favoriteRutas.length,
-            itemBuilder: (context, index) {
-              final ruta = favoriteRutas[index];
-              return RouteCard(
-                ruta: ruta,
-                onTap: () {
-                  // Navegar al detalle y recargar la lista de favoritos al volver
-                  context.push('/route/${ruta.idRutaTuristica}').then((_) => _loadFavorites());
-                },
+            // --- ESTADO VACÍO ---
+            if (favoriteRutas.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.favorite_border, size: 80, color: Colors.grey[300]),
+                      const SizedBox(height: 24),
+                      Text('No hay favoritos', style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Guarda tus rutas favoritas para acceder rápidamente',
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(onPressed: () => context.go('/home'), child: const Text('Explorar rutas')),
+                    ],
+                  ),
+                ),
               );
-            },
-          );
+            }
+
+            // --- LISTA DE FAVORITOS ---
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Mis Favoritos', style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('${favoriteRutas.length} rutas guardadas', style: textTheme.bodyLarge?.copyWith(color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverList( 
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                       final ruta = favoriteRutas[index];
+                       return Padding(
+                         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                         child: RouteCard(
+                           ruta: ruta,
+                           onTap: () => context.push('/route/${ruta.idRutaTuristica}').then((_) => _loadFavorites()),
+                         ),
+                       );
+                    },
+                    childCount: favoriteRutas.length,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 2, // Favoritos es el tercer item
+        onTap: (index) {
+          if (index == 0) context.go('/home');
+          if (index == 1) context.go('/map');
+          if (index == 3) context.go('/profile');
         },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Inicio'),
+          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Mapa'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoritos'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Perfil'),
+        ],
       ),
     );
   }
